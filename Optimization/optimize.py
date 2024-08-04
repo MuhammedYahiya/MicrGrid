@@ -3,9 +3,11 @@ from tensorflow_model_optimization.sparsity import keras as sparsity
 import pandas as pd
 from sklearn.model_selection import train_test_split
 import numpy as np
+import tf2onnx
+import onnx
 
 #Load the saved model
-model = tf.keras.models.load_model('D:/MicroGrid/Training/best_model.h5')
+model = tf.keras.models.load_model('/home/admin_eee/Documents/MicrGrid/model/best_model.keras')
 
 #Define pruning parameters
 pruning_params = {
@@ -27,7 +29,7 @@ pruned_model = tf.keras.Sequential([
 pruned_model.compile(optimizer='adam', loss='sparse_categorical_crossentropy', metrics=['accuracy'])
 
 #Prepare the dataset
-data = pd.read_csv('D:/MicroGrid/Training/V2G_G2V.csv')
+data = pd.read_csv('/home/admin_eee/Documents/MicrGrid/Training/V2G_G2V.csv')
 x = data.drop(columns=['response'])
 y = data['response']
 x_train, x_test, y_train, y_test = train_test_split(x,y, test_size=0.2, random_state=123)
@@ -55,7 +57,11 @@ print(f"Test accuracy: {accuracy}")
 #Strip pruning wrappers
 final_model = sparsity.strip_pruning(pruned_model)
 
-#save the final pruned model
-final_model.save('pruned_best_model.h5')
+# Convert the TensorFlow model to ONNX
+onnx_model, _ = tf2onnx.convert.from_keras(final_model)
 
-print("Pruned model saved as pruned_best_model.h5")
+# Save the ONNX model to file
+onnx_path = '/home/admin_eee/Documents/MicrGrid/model/pruned_best_model.onnx'
+onnx.save_model(onnx_model, onnx_path)
+
+print(f"ONNX model saved as {onnx_path}")
